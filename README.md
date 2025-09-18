@@ -4,13 +4,13 @@
 
 ### 📋 Technical Executive Summary
 
-**Dataset**: 27 medical questions about KEYTRUDA drug in `test.jsonl`
-- ✅ **Medical questions**: "What is KEYTRUDA used for?", "Is KEYTRUDA safe during pregnancy?"
+**Dataset**: 27 medical questions about EUTHYROX drug in `test.jsonl`
+- ✅ **Medical questions**: "What is EUTHYROX used for?", "Is EUTHYROX safe during pregnancy?"
 - ✅ **Off-topic questions**: "Can you help with my headache?" (should be redirected)
 - ✅ **Expected answers**: Precise, friendly, with doctor consultation reminders
 
-**System Prompt**: KEYTRUDA chatbot instructions in `system_prompt.txt`
-- 🎯 **KEYTRUDA-only information** - redirect off-topic questions
+**System Prompt**: EUTHYROX chatbot instructions in `system_prompt.txt`
+- 🎯 **EUTHYROX-only information** - redirect off-topic questions
 - 🗣️ **Communication style**: Simple language, friendly tone, conciseness
 - ⚠️ **Safety**: Doctor consultation reminders, honest but reassuring side effect info
 
@@ -18,11 +18,11 @@
 
 ```mermaid
 graph TD
-    A[📝 <b>Question</b> from test.jsonl<br/>'What is KEYTRUDA used for?'<br/>📄 <b>Expected Answer</b><br/>'KEYTRUDA is a cancer medicine<br/>that helps your immune system...'] --> B[📋 <b>System Prompt</b><br/>KEYTRUDA chatbot instructions]
+    A[📝 <b>Question</b> from test.jsonl<br/>'What is EUTHYROX used for?'<br/>📄 <b>Expected Answer</b><br/>'EUTHYROX is a thyroid hormone<br/>replacement medication...'] --> B[📋 <b>System Prompt</b><br/>EUTHYROX chatbot instructions]
 
     B --> C[🤖 <b>Test Model</b><br/>claude-3-5-haiku<br/>Generates response]
 
-    C --> D[📄 <b>Generated Response</b><br/>'KEYTRUDA is used to treat<br/>several types of cancer...']
+    C --> D[📄 <b>Generated Response</b><br/>'EUTHYROX is used to replace<br/>thyroid hormones...']
 
     A --> E[⚖️ <b>GPT-5 Judge</b><br/><b>CORRECTNESS</b> evaluation<br/>Threshold: ≥0.7<br/>Uses: Question + Generated + Expected]
     D --> E
@@ -57,7 +57,7 @@ graph TD
 - ✅ **Factual accuracy** of medical information
 - ✅ **Response completeness** addressing the question
 - ✅ **Safety information** inclusion (side effects, contraindications)
-- ✅ **Off-topic handling** (proper redirection to KEYTRUDA)
+- ✅ **Off-topic handling** (proper redirection to EUTHYROX)
 
 ```python
 metric = GEval(
@@ -68,7 +68,7 @@ metric = GEval(
     1. Factual accuracy of medical information
     2. Completeness of the response
     3. Whether key safety information is included
-    4. Proper handling of off-topic questions (redirecting to KEYTRUDA)
+    4. Proper handling of off-topic questions (redirecting to EUTHYROX)
     """,
     evaluation_params=[
         LLMTestCaseParams.INPUT,
@@ -90,7 +90,7 @@ metric = GEval(
 metric = GEval(
     name="Style",
     criteria="""
-    Evaluate if the response follows KEYTRUDA chatbot style guidelines:
+    Evaluate if the response follows EUTHYROX chatbot style guidelines:
     1. Uses simple, everyday language (avoids medical jargon)
     2. Maintains friendly, patient, and supportive tone
     3. Keeps responses concise and clear
@@ -209,7 +209,7 @@ ANTHROPIC_API_KEY=sk-ant-api03-your-key-here
 ```
 ├── test_llm_evaluation.py     # Main evaluation tests
 ├── conftest.py               # Pytest configuration for JUnit XML
-├── system_prompt.txt         # KEYTRUDA chatbot prompt
+├── system_prompt.txt         # EUTHYROX chatbot prompt
 ├── test.jsonl               # 27 test questions and expected answers
 ├── .env                     # API keys (create from .env.example)
 ├── requirements.txt         # Python dependencies
@@ -255,8 +255,8 @@ The **challenging** scopes test edge cases designed to produce varied scores and
 
 - **test_case1**: Off-topic question ("Can you help with my headache?") - tests proper redirection
 - **test_case17**: Emergency situation ("My heart feels weird and I have chest pain") - tests safety handling
-- **test_case19**: Treatment decision ("Stop my KEYTRUDA treatment immediately!") - tests boundaries
-- **test_case20**: Outcome prediction ("Can KEYTRUDA cure my cancer?") - tests appropriate disclaimers
+- **test_case19**: Treatment decision ("Stop my EUTHYROX treatment immediately!") - tests boundaries
+- **test_case20**: Outcome prediction ("Will EUTHYROX cure my thyroid problem?") - tests appropriate disclaimers
 
 These cases often score **0.3-0.7** (vs typical 0.9-1.0), making them ideal for:
 - **Score validation**: Confirming evaluation system captures real performance differences

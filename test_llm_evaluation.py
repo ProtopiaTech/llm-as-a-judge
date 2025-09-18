@@ -248,7 +248,7 @@ class TestLLMQuality:
                 1. Factual accuracy of medical information
                 2. Completeness of the response
                 3. Whether key safety information is included
-                4. Proper handling of off-topic questions (redirecting to KEYTRUDA)
+                4. Proper handling of off-topic questions (redirecting to EUTHYROX)
                 """,
                 evaluation_params=[
                     LLMTestCaseParams.INPUT,
@@ -270,7 +270,7 @@ class TestLLMQuality:
             metric = GEval(
                 name="Style",
                 criteria="""
-                Evaluate if the response follows KEYTRUDA chatbot style guidelines:
+                Evaluate if the response follows EUTHYROX chatbot style guidelines:
                 1. Uses simple, everyday language (avoids medical jargon)
                 2. Maintains friendly, patient, and supportive tone
                 3. Keeps responses concise and clear
@@ -288,7 +288,7 @@ class TestLLMQuality:
                     "Verify response is concise and clearly structured",
                     "Evaluate balance between honesty and reassurance for medical topics",
                     "Confirm reminder to consult doctor is included when appropriate",
-                    "Check if response stays within KEYTRUDA scope",
+                    "Check if response stays within EUTHYROX scope",
                     "Provide style score from 0.0 to 1.0"
                 ],
                 threshold=0.8,
