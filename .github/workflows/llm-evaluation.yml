@@ -54,7 +54,7 @@ jobs:
       run: |
         echo "🚀 Running single test case evaluation..."
         python -m pytest test_llm_evaluation.py \
-          -k "test_case0 and test_correctness and claude" \
+          -k "test_case0-0.3 and test_correctness" \
           --junitxml=test-results/junit.xml \
           --html=test-results/report.html \
           --self-contained-html \
@@ -65,7 +65,7 @@ jobs:
       run: |
         echo "🚀 Running three test cases evaluation..."
         python -m pytest test_llm_evaluation.py \
-          -k "(test_case0 or test_case1 or test_case2) and test_correctness" \
+          -k "(test_case0-0.3 or test_case1-0.3 or test_case2-0.3) and test_correctness" \
           --junitxml=test-results/junit.xml \
           --html=test-results/report.html \
           --self-contained-html \

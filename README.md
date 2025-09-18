@@ -18,27 +18,26 @@
 
 ```mermaid
 graph TD
-    A[📝 Question from test.jsonl<br/>'What is KEYTRUDA used for?'] --> B[📋 System Prompt<br/>KEYTRUDA chatbot instructions]
+    A[📝 <b>Question</b> from test.jsonl<br/>'What is KEYTRUDA used for?'<br/>📄 <b>Expected Answer</b><br/>'KEYTRUDA is a cancer medicine<br/>that helps your immune system...'] --> B[📋 <b>System Prompt</b><br/>KEYTRUDA chatbot instructions]
 
-    B --> C[🤖 Test Model<br/>claude-3-5-haiku<br/>Generates response]
+    B --> C[🤖 <b>Test Model</b><br/>claude-3-5-haiku<br/>Generates response]
 
-    C --> D[📄 Generated Response<br/>'KEYTRUDA is used to treat<br/>several types of cancer...']
+    C --> D[📄 <b>Generated Response</b><br/>'KEYTRUDA is used to treat<br/>several types of cancer...']
 
-    D --> E[⚖️ GPT-5 Judge<br/>CORRECTNESS evaluation<br/>Threshold: ≥0.7]
-    D --> F[⚖️ GPT-5 Judge<br/>STYLE evaluation<br/>Threshold: ≥0.8]
+    A --> E[⚖️ <b>GPT-5 Judge</b><br/><b>CORRECTNESS</b> evaluation<br/>Threshold: ≥0.7<br/>Uses: Question + Generated + Expected]
+    D --> E
 
-    A --> G[📄 Expected Answer<br/>'KEYTRUDA is a cancer medicine<br/>that helps your immune system...']
+    E --> H[📊 <b>Correctness Score</b><br/>Score: 1.0<br/>Passed: ✅<br/>Reason: 'Factually accurate']
 
-    G --> E
+    D --> F[⚖️ <b>GPT-5 Judge</b><br/><b>STYLE</b> evaluation<br/>Threshold: ≥0.8<br/>Uses: Generated + System Prompt]
     B --> F
 
-    E --> H[📊 Correctness Score<br/>Score: 1.0<br/>Passed: ✅<br/>Reason: 'Factually accurate']
-    F --> I[📊 Style Score<br/>Score: 0.9<br/>Passed: ✅<br/>Reason: 'Friendly tone, simple language']
+    F --> I[📊 <b>Style Score</b><br/>Score: 0.9<br/>Passed: ✅<br/>Reason: 'Friendly tone, simple language']
 
-    H --> J[💰 Cost Tracking<br/>API Cost: $0.0024<br/>Tokens Used: 1813]
+    H --> J[💰 <b>Cost Tracking</b><br/>API Cost: $0.0024<br/>Tokens Used: 1813]
     I --> J
 
-    J --> K[📄 JUnit XML Output<br/>Rich custom properties<br/>Score + Cost + Reason]
+    J --> K[📄 <b>JUnit XML Output</b><br/>Rich custom properties<br/>Score + Cost + Reason]
 
     style A fill:#e1f5fe
     style B fill:#f3e5f5
@@ -46,7 +45,6 @@ graph TD
     style D fill:#fff8e1
     style E fill:#fff3e0
     style F fill:#fff3e0
-    style G fill:#e8f5fe
     style H fill:#e8f5e8
     style I fill:#e8f5e8
     style J fill:#fce4ec
@@ -148,14 +146,20 @@ cp .env.example .env
 
 ### 2. Run Evaluation
 ```bash
-# Single test (cost: ~$0.50)
-python -m pytest test_llm_evaluation.py -k "test_case0 and test_correctness and claude" -v
+# Single test case (3 models) - cost: ~$1.50
+python -m pytest test_llm_evaluation.py -k "test_case0-0.3 and test_correctness" -v
 
-# Three test cases (cost: ~$2)
-python -m pytest test_llm_evaluation.py -k "(test_case0 or test_case1 or test_case2) and test_correctness" -v
+# Three test cases (9 tests) - cost: ~$4.50
+python -m pytest test_llm_evaluation.py -k "(test_case0-0.3 or test_case1-0.3 or test_case2-0.3) and test_correctness" -v
 
-# Full evaluation (cost: ~$10-20)
+# Full evaluation (162 tests) - cost: ~$10-20
 python -m pytest test_llm_evaluation.py --junitxml=results.xml -v
+
+# Run specific test case locally
+python -m pytest test_llm_evaluation.py -k "test_case5-0.3 and test_correctness" -v
+
+# Run with JUnit XML output for CI/CD
+python -m pytest test_llm_evaluation.py -k "test_case0-0.3 and test_correctness" --junitxml=results.xml --html=report.html --self-contained-html -v
 ```
 
 ## 📊 Sample Results
