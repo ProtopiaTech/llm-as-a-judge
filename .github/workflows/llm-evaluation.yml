@@ -69,7 +69,7 @@ jobs:
           --junitxml=test-results/junit.xml \
           --html=test-results/report.html \
           --self-contained-html \
-          -v --tb=short --maxfail=3
+          -v --tb=short
 
     - name: 🧪 Run LLM Evaluation (Full Suite)
       if: github.event.inputs.test_scope == 'full'
@@ -80,7 +80,7 @@ jobs:
           --junitxml=test-results/junit.xml \
           --html=test-results/report.html \
           --self-contained-html \
-          -v --tb=short --maxfail=10
+          -v --tb=short
 
     - name: 📊 Simple Results Summary
       if: always()
@@ -181,9 +181,9 @@ jobs:
                     passed = testcase.find('failure') is None
                     reason = 'N/A'
 
-                # Extract model name
+                # Extract model name (use full original name)
                 model = props.get('model', 'Unknown')
-                model_short = model.split('-')[0] if model != 'Unknown' else 'Unknown'
+                model_short = model  # Use full model name
 
                 # Update model stats
                 if score != 'N/A':

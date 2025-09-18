@@ -1,5 +1,124 @@
 # 🤖 LLM-as-a-Judge Evaluation System
 
+## 🧠 How LLM-as-a-Judge Works
+
+### 📋 Technical Executive Summary
+
+**Dataset**: 27 medical questions about KEYTRUDA drug in `test.jsonl`
+- ✅ **Medical questions**: "What is KEYTRUDA used for?", "Is KEYTRUDA safe during pregnancy?"
+- ✅ **Off-topic questions**: "Can you help with my headache?" (should be redirected)
+- ✅ **Expected answers**: Precise, friendly, with doctor consultation reminders
+
+**System Prompt**: KEYTRUDA chatbot instructions in `system_prompt.txt`
+- 🎯 **KEYTRUDA-only information** - redirect off-topic questions
+- 🗣️ **Communication style**: Simple language, friendly tone, conciseness
+- ⚠️ **Safety**: Doctor consultation reminders, honest but reassuring side effect info
+
+### 🔄 LLM-as-a-Judge Evaluation Flow (Single Test Case)
+
+```mermaid
+graph TD
+    A[📝 Question from test.jsonl<br/>'What is KEYTRUDA used for?'] --> B[📋 System Prompt<br/>KEYTRUDA chatbot instructions]
+
+    B --> C[🤖 Test Model<br/>claude-3-5-haiku<br/>Generates response]
+
+    C --> D[📄 Generated Response<br/>'KEYTRUDA is used to treat<br/>several types of cancer...']
+
+    D --> E[⚖️ GPT-5 Judge<br/>CORRECTNESS evaluation<br/>Threshold: ≥0.7]
+    D --> F[⚖️ GPT-5 Judge<br/>STYLE evaluation<br/>Threshold: ≥0.8]
+
+    A --> G[📄 Expected Answer<br/>'KEYTRUDA is a cancer medicine<br/>that helps your immune system...']
+
+    G --> E
+    B --> F
+
+    E --> H[📊 Correctness Score<br/>Score: 1.0<br/>Passed: ✅<br/>Reason: 'Factually accurate']
+    F --> I[📊 Style Score<br/>Score: 0.9<br/>Passed: ✅<br/>Reason: 'Friendly tone, simple language']
+
+    H --> J[💰 Cost Tracking<br/>API Cost: $0.0024<br/>Tokens Used: 1813]
+    I --> J
+
+    J --> K[📄 JUnit XML Output<br/>Rich custom properties<br/>Score + Cost + Reason]
+
+    style A fill:#e1f5fe
+    style B fill:#f3e5f5
+    style C fill:#e8f5e8
+    style D fill:#fff8e1
+    style E fill:#fff3e0
+    style F fill:#fff3e0
+    style G fill:#e8f5fe
+    style H fill:#e8f5e8
+    style I fill:#e8f5e8
+    style J fill:#fce4ec
+    style K fill:#f1f8e9
+```
+
+### 🎯 What Does GPT-5 Judge Evaluate?
+
+**CORRECTNESS (Threshold: 0.7)**
+- ✅ **Factual accuracy** of medical information
+- ✅ **Response completeness** addressing the question
+- ✅ **Safety information** inclusion (side effects, contraindications)
+- ✅ **Off-topic handling** (proper redirection to KEYTRUDA)
+
+```python
+metric = GEval(
+    name="Correctness",
+    criteria="""
+    Evaluate if the generated answer correctly addresses the user's question
+    compared to the expected answer. Consider:
+    1. Factual accuracy of medical information
+    2. Completeness of the response
+    3. Whether key safety information is included
+    4. Proper handling of off-topic questions (redirecting to KEYTRUDA)
+    """,
+    evaluation_params=[
+        LLMTestCaseParams.INPUT,
+        LLMTestCaseParams.ACTUAL_OUTPUT,
+        LLMTestCaseParams.EXPECTED_OUTPUT
+    ],
+    threshold=0.7,
+    model="gpt-5"
+)
+```
+
+**STYLE (Threshold: 0.8)**
+- 🗣️ **Simple language** - avoiding medical jargon
+- 😊 **Friendly, patient tone** - supportive for patients
+- 📝 **Conciseness and clarity** of structure
+- 👨‍⚕️ **Doctor consultation reminders**
+
+```python
+metric = GEval(
+    name="Style",
+    criteria="""
+    Evaluate if the response follows KEYTRUDA chatbot style guidelines:
+    1. Uses simple, everyday language (avoids medical jargon)
+    2. Maintains friendly, patient, and supportive tone
+    3. Keeps responses concise and clear
+    4. Is honest but reassuring when discussing side effects
+    5. Always reminds users to consult their doctor
+    6. Stays within scope of provided information
+    """,
+    evaluation_params=[
+        LLMTestCaseParams.ACTUAL_OUTPUT,
+        LLMTestCaseParams.CONTEXT  # System prompt as context
+    ],
+    threshold=0.8,
+    model="gpt-5"
+)
+```
+
+### 📈 Output
+
+For each test we get:
+- **Score**: 0.0-1.0 (did it pass the threshold?)
+- **Cost**: Real API cost (e.g., $0.0024)
+- **Reason**: Detailed GPT-5 evaluation justification
+- **Status**: ✅ PASSED / ❌ FAILED
+
+---
+
 Production-ready **LLM evaluation system** using **DeepEval + pytest** with native **JUnit XML output** for CI/CD integration.
 
 ## 🎯 Features
@@ -147,13 +266,14 @@ python -m pytest test_llm_evaluation.py -x --maxfail=3
 python -m pytest test_llm_evaluation.py --junitxml=results.xml
 ```
 
+
 ## 📚 Based on DeepEval Framework
 
 This implementation follows the **input.md blueprint** using:
-- **DeepEval 3.4.9+**: Native G-Eval metrics
-- **pytest parametrization**: 3 models × 1 temperature × 27 questions
+- **DeepEval 3.4.9+**: Native G-Eval metrics with GPT-5 judge
+- **pytest parametrization**: 3 models × 1 temperature × 27 questions × 2 metrics = 162 tests
 - **Async API calls**: Efficient concurrent evaluation
-- **JUnit XML integration**: Native CI/CD compatibility
+- **JUnit XML integration**: Rich custom properties for CI/CD
 
 ---
 
