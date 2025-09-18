@@ -220,6 +220,15 @@ class TestLLMQuality:
         question = test_case["question"]
         expected_answer = test_case["expected_answer"]
 
+        # Extract test case identifier from pytest node name
+        test_case_id = "unknown"
+        if hasattr(request.node, 'name'):
+            # Extract test_caseX from name like "test_correctness[test_case1-0.3-gpt-4.1-nano-2025-04-14]"
+            import re
+            match = re.search(r'test_case(\d+)', request.node.name)
+            if match:
+                test_case_id = f"test_case{match.group(1)}"
+
         # Generate response and track cost
         generated_answer, tokens_used, api_cost = await self._generate_response_with_cost(model, question)
 
@@ -227,6 +236,7 @@ class TestLLMQuality:
         request.node.llm_response = generated_answer
         request.node.tokens_used = tokens_used
         request.node.api_cost = api_cost
+        request.node.test_case_id = test_case_id
 
         # Create appropriate metric
         if metric_type == "correctness":
@@ -314,7 +324,7 @@ class TestLLMQuality:
                     'score': score,
                     'threshold': metric.threshold,
                     'passed': passed,
-                    'reason': reason[:500] + "..." if len(reason) > 500 else reason,
+                    'reason': reason,
                     'judge_model': os.getenv("JUDGE_MODEL", "gpt-5")
                 }
             }
@@ -336,7 +346,7 @@ class TestLLMQuality:
                     'score': 0.0,
                     'threshold': metric.threshold if 'metric' in locals() else 0.0,
                     'passed': False,
-                    'reason': f"Evaluation error: {str(e)[:300]}",
+                    'reason': f"Evaluation error: {str(e)}",
                     'judge_model': os.getenv("JUDGE_MODEL", "gpt-5")
                 }
             }

@@ -31,6 +31,8 @@ def pytest_runtest_makereport(item, call):
             item.user_properties.append(("api_cost_usd", f"${item.api_cost:.4f}"))
         if hasattr(item, 'tokens_used'):
             item.user_properties.append(("tokens_used", str(item.tokens_used)))
+        if hasattr(item, 'test_case_id'):
+            item.user_properties.append(("test_case_id", item.test_case_id))
 
         # Add DeepEval metrics if available in test function
         if hasattr(item, 'deepeval_metrics'):
@@ -40,7 +42,7 @@ def pytest_runtest_makereport(item, call):
                 item.user_properties.append((f"{metric_name}_passed", str(metric_data.get('passed', False))))
                 reason = metric_data.get('reason', '')
                 if reason:
-                    item.user_properties.append((f"{metric_name}_reason", reason[:500] + "..." if len(reason) > 500 else reason))
+                    item.user_properties.append((f"{metric_name}_reason", reason))
 
 
 def pytest_configure(config):
