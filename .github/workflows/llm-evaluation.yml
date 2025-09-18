@@ -55,8 +55,8 @@ jobs:
         echo "🚀 Running single test case evaluation..."
         python -m pytest test_llm_evaluation.py \
           -k "test_case0 and test_correctness and claude" \
-          --junitxml=test-results/junit-single.xml \
-          --html=test-results/report-single.html \
+          --junitxml=test-results/junit.xml \
+          --html=test-results/report.html \
           --self-contained-html \
           -v --tb=short
 
@@ -66,8 +66,8 @@ jobs:
         echo "🚀 Running three test cases evaluation..."
         python -m pytest test_llm_evaluation.py \
           -k "(test_case0 or test_case1 or test_case2) and test_correctness" \
-          --junitxml=test-results/junit-three.xml \
-          --html=test-results/report-three.html \
+          --junitxml=test-results/junit.xml \
+          --html=test-results/report.html \
           --self-contained-html \
           -v --tb=short --maxfail=3
 
@@ -77,59 +77,27 @@ jobs:
         echo "🚀 Running full evaluation suite..."
         echo "⚠️  This will cost approximately $10-20 USD"
         python -m pytest test_llm_evaluation.py \
-          --junitxml=test-results/junit-full.xml \
-          --html=test-results/report-full.html \
+          --junitxml=test-results/junit.xml \
+          --html=test-results/report.html \
           --self-contained-html \
           -v --tb=short --maxfail=10
 
-    - name: 📊 Parse Test Results
+    - name: 📊 Simple Results Summary
       if: always()
       run: |
-        echo "## 📊 Test Results Summary" >> $GITHUB_STEP_SUMMARY
-
-        if [ -f test-results/junit-single.xml ]; then
-          JUNIT_FILE="test-results/junit-single.xml"
-        elif [ -f test-results/junit-three.xml ]; then
-          JUNIT_FILE="test-results/junit-three.xml"
-        elif [ -f test-results/junit-full.xml ]; then
-          JUNIT_FILE="test-results/junit-full.xml"
-        fi
-
-        if [ -f "$JUNIT_FILE" ]; then
-          # Extract key metrics from JUnit XML
-          TESTS=$(xmllint --xpath "//testsuite/@tests" "$JUNIT_FILE" | sed 's/tests="//;s/"//')
-          FAILURES=$(xmllint --xpath "//testsuite/@failures" "$JUNIT_FILE" | sed 's/failures="//;s/"//')
-          TIME=$(xmllint --xpath "//testsuite/@time" "$JUNIT_FILE" | sed 's/time="//;s/"//')
-
-          echo "- **Tests Run**: $TESTS" >> $GITHUB_STEP_SUMMARY
-          echo "- **Failures**: $FAILURES" >> $GITHUB_STEP_SUMMARY
-          echo "- **Duration**: ${TIME}s" >> $GITHUB_STEP_SUMMARY
-
-          # Extract costs and scores
-          TOTAL_COST=$(xmllint --xpath "sum(//property[@name='api_cost_usd']/@value)" "$JUNIT_FILE" 2>/dev/null | sed 's/\$//g' || echo "N/A")
-          echo "- **Total API Cost**: \$${TOTAL_COST}" >> $GITHUB_STEP_SUMMARY
-
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🎯 Model Performance" >> $GITHUB_STEP_SUMMARY
-          echo "| Test | Model | Score | Cost | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|------|-------|--------|------|--------|" >> $GITHUB_STEP_SUMMARY
-
-          # Parse individual test results (simplified)
-          xmllint --xpath "//testcase" "$JUNIT_FILE" | while IFS= read -r testcase; do
-            if [[ $testcase == *"name="* ]]; then
-              echo "| Test case | Model | Score | Cost | ✅ |" >> $GITHUB_STEP_SUMMARY
-            fi
-          done 2>/dev/null || echo "| Results | Available | In | Reports | ✅ |" >> $GITHUB_STEP_SUMMARY
-        fi
+        echo "## 🤖 LLM-as-a-Judge Evaluation Results" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "📋 **Test Scope**: $(echo ${{ github.event.inputs.test_scope || 'single' }} | tr '[:lower:]' '[:upper:]')" >> $GITHUB_STEP_SUMMARY
+        echo "🤖 **Judge Model**: GPT-5" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "📊 **Detailed results available in the test reports below**" >> $GITHUB_STEP_SUMMARY
 
     - name: 📤 Upload Test Reports
       if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: llm-evaluation-reports
-        path: |
-          test-results/*.xml
-          test-results/*.html
+        name: llm-evaluation-reports-${{ github.event.inputs.test_scope || 'single' }}
+        path: test-results/
         retention-days: 30
 
     - name: 📋 Publish Test Results
@@ -137,9 +105,17 @@ jobs:
       uses: dorny/test-reporter@v1
       with:
         name: 🤖 LLM Evaluation Results
-        path: 'test-results/*.xml'
+        path: 'test-results/junit.xml'
         reporter: java-junit
         fail-on-error: false
+
+    - name: 📈 Enhanced JUnit Report
+      if: always()
+      uses: EnricoMi/publish-unit-test-result-action@v2
+      with:
+        files: test-results/junit.xml
+        check_name: "LLM Evaluation Detailed Results"
+        comment_mode: always
 
     - name: 💬 Comment on PR
       if: github.event_name == 'pull_request' && always()
@@ -147,58 +123,58 @@ jobs:
       with:
         script: |
           const fs = require('fs');
-          const path = require('path');
 
-          // Find JUnit XML file
-          const testResults = fs.readdirSync('test-results').find(f => f.endsWith('.xml'));
+          try {
+            const xmlContent = fs.readFileSync('test-results/junit.xml', 'utf8');
 
-          if (!testResults) {
-            console.log('No test results found');
-            return;
+            // Extract basic metrics (simplified parsing)
+            const testsMatch = xmlContent.match(/tests="(\d+)"/);
+            const failuresMatch = xmlContent.match(/failures="(\d+)"/);
+            const timeMatch = xmlContent.match(/time="([\d.]+)"/);
+
+            const tests = testsMatch ? testsMatch[1] : 'N/A';
+            const failures = failuresMatch ? failuresMatch[1] : 'N/A';
+            const time = timeMatch ? parseFloat(timeMatch[1]).toFixed(1) : 'N/A';
+
+            const status = failures === '0' ? '✅ PASSED' : '❌ FAILED';
+            const emoji = failures === '0' ? '🎉' : '🚨';
+            const scope = '${{ github.event.inputs.test_scope || "single" }}';
+
+            const comment = `${emoji} **LLM-as-a-Judge Evaluation Results**
+
+            | Metric | Value |
+            |--------|-------|
+            | Status | ${status} |
+            | Scope | ${scope} |
+            | Tests Run | ${tests} |
+            | Failures | ${failures} |
+            | Duration | ${time}s |
+
+            📊 **Detailed Reports**: Check the test results and uploaded artifacts below.
+
+            🤖 Evaluated with **GPT-5 as judge** using **DeepEval + pytest**.`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+          } catch (error) {
+            console.log('Could not read test results:', error.message);
           }
-
-          const xmlContent = fs.readFileSync(`test-results/${testResults}`, 'utf8');
-
-          // Extract basic metrics (simplified parsing)
-          const testsMatch = xmlContent.match(/tests="(\d+)"/);
-          const failuresMatch = xmlContent.match(/failures="(\d+)"/);
-          const timeMatch = xmlContent.match(/time="([\d.]+)"/);
-
-          const tests = testsMatch ? testsMatch[1] : 'N/A';
-          const failures = failuresMatch ? failuresMatch[1] : 'N/A';
-          const time = timeMatch ? parseFloat(timeMatch[1]).toFixed(1) : 'N/A';
-
-          const status = failures === '0' ? '✅ PASSED' : '❌ FAILED';
-          const emoji = failures === '0' ? '🎉' : '🚨';
-
-          const comment = `${emoji} **LLM-as-a-Judge Evaluation Results**
-
-          | Metric | Value |
-          |--------|-------|
-          | Status | ${status} |
-          | Tests Run | ${tests} |
-          | Failures | ${failures} |
-          | Duration | ${time}s |
-
-          📊 **Detailed Reports**: Check the uploaded artifacts for complete HTML and JUnit XML reports.
-
-          🤖 Evaluated with **GPT-5 as judge** using **DeepEval + pytest**.`;
-
-          github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: comment
-          });
 
     - name: 🚨 Fail on Test Failures
       if: always()
       run: |
-        if [ -f test-results/*.xml ]; then
-          FAILURES=$(xmllint --xpath "//testsuite/@failures" test-results/*.xml | sed 's/failures="//;s/"//')
+        if [ -f test-results/junit.xml ]; then
+          FAILURES=$(xmllint --xpath "//testsuite/@failures" test-results/junit.xml | sed 's/failures="//;s/"//')
           if [ "$FAILURES" != "0" ]; then
             echo "❌ Tests failed with $FAILURES failures"
             exit 1
           fi
           echo "✅ All tests passed!"
+        else
+          echo "⚠️  No test results found"
+          exit 1
         fi
