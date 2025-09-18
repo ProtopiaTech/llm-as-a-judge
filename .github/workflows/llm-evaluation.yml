@@ -230,11 +230,16 @@ jobs:
         |------|-------|--------|--------|-----------|--------|------|--------|"""
 
             for result in test_results:
-                summary += f'\\n| {result["test"]} | {result["model"]} | {result["metric"]} | {result["score"]} | {result["threshold"]} | {result["status"]} | {result["cost"]} | {result["reason"]} |'
+                summary += f"""
+        | {result["test"]} | {result["model"]} | {result["metric"]} | {result["score"]} | {result["threshold"]} | {result["status"]} | {result["cost"]} | {result["reason"]} |"""
 
             # Model performance breakdown
             if model_stats:
-                summary += '\\n\\n### 🏆 Model Performance\\n| Model | Tests | Avg Score | Total Cost |\\n|-------|-------|-----------|------------|'
+                summary += """
+
+        ### 🏆 Model Performance
+        | Model | Tests | Avg Score | Total Cost |
+        |-------|-------|-----------|------------|"""
 
                 for model, stats in model_stats.items():
                     if stats['scores']:
@@ -243,7 +248,8 @@ jobs:
                     else:
                         avg_score_str = 'N/A'
 
-                    summary += f'\\n| {model} | {stats["tests"]} | {avg_score_str} | ${stats["cost"]:.4f} |'
+                    summary += f"""
+        | {model} | {stats["tests"]} | {avg_score_str} | ${stats["cost"]:.4f} |"""
 
             # Write to GitHub Step Summary
             with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as f:
