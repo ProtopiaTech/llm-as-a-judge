@@ -295,31 +295,20 @@ class TestLLMQuality:
         )
 
         # Run evaluation and capture detailed results
+        score = 0.0
+        reason = "Unknown error"
+        passed = False
+
         try:
-            # Use assert_test to capture detailed evaluation
-            try:
-                assert_test(llm_test_case, [metric])
-                # If we get here, test passed
-                score = 1.0  # Passed means score >= threshold
-                reason = f"✅ {metric_type.title()} evaluation passed"
-                passed = True
-            except AssertionError as ae:
-                # Parse the assertion error to extract score and reason
-                error_msg = str(ae)
+            # Evaluate metric directly to get actual score
+            metric.measure(llm_test_case)
 
-                # Extract score from error message like "Metrics: Style [GEval] (score: 0.6, threshold: 0.8..."
-                import re
-                score_match = re.search(r'score:\s*([\d.]+)', error_msg)
-                reason_match = re.search(r'reason:\s*([^)]+)', error_msg)
+            # Get the actual score from the metric
+            score = metric.score
+            reason = metric.reason if hasattr(metric, 'reason') and metric.reason else f"Score: {score:.3f}"
+            passed = score >= metric.threshold
 
-                score = float(score_match.group(1)) if score_match else 0.0
-                reason = reason_match.group(1) if reason_match else error_msg
-                passed = False
-
-                # Re-raise if score is too low
-                raise
-
-            # Store detailed metrics in pytest item
+            # Store detailed metrics in pytest item BEFORE any exceptions
             request.node.deepeval_metrics = {
                 metric_type: {
                     'score': score,
@@ -330,12 +319,22 @@ class TestLLMQuality:
                 }
             }
 
+            # Use assert_test for pytest integration
+            if passed:
+                assert_test(llm_test_case, [metric])
+            else:
+                # Raise failure with real score info
+                raise AssertionError(f"{metric_type.title()} score {score:.3f} below threshold {metric.threshold}")
+
+        except AssertionError:
+            # Re-raise assertion errors (test failures) without changing stored data
+            raise
         except Exception as e:
-            # Store error info
+            # Only catch genuine errors, not test failures
             request.node.deepeval_metrics = {
                 metric_type: {
                     'score': 0.0,
-                    'threshold': metric.threshold,
+                    'threshold': metric.threshold if 'metric' in locals() else 0.0,
                     'passed': False,
                     'reason': f"Evaluation error: {str(e)[:300]}",
                     'judge_model': os.getenv("JUDGE_MODEL", "gpt-5")
