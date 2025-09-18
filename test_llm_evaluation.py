@@ -146,7 +146,8 @@ class LLMResponseGenerator:
         """Calculate OpenAI API cost"""
         pricing = {
             "gpt-5": {"input": 1.25, "output": 10.0},
-            "gpt-5-mini-2025-08-07": {"input": 0.25, "output": 2.0},
+            "gpt-4.1-mini-2025-04-14": {"input": 0.80, "output": 3.20},
+            "gpt-4.1-nano-2025-04-14": {"input": 0.20, "output": 0.80},
             "gpt-4o-mini-2024-07-18": {"input": 0.15, "output": 0.60}
         }
 
@@ -185,9 +186,10 @@ TEST_CASES = load_test_cases()
 
 # Model configurations
 MODELS = [
-    "gpt-5-mini-2025-08-07",
     "claude-3-5-haiku-20241022",
-    "gpt-4o-mini-2024-07-18"
+    "gpt-4o-mini-2024-07-18",
+    "gpt-4.1-mini-2025-04-14",
+    "gpt-4.1-nano-2025-04-14"
 ]
 
 TEMPERATURES = [0.3]  # Single temperature for all models

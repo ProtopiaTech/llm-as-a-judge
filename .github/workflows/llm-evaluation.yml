@@ -75,7 +75,7 @@ jobs:
       if: github.event.inputs.test_scope == 'full'
       run: |
         echo "🚀 Running full evaluation suite..."
-        echo "⚠️  This will cost approximately $10-20 USD"
+        echo "⚠️  This will cost approximately $15-25 USD"
         python -m pytest test_llm_evaluation.py \
           --junitxml=test-results/junit.xml \
           --html=test-results/report.html \

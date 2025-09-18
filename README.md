@@ -121,7 +121,7 @@ Production-ready **LLM evaluation system** using **DeepEval + pytest** with nati
 
 ## 🎯 Features
 
-- **3 Models Evaluation**: gpt-5-mini, claude-3-5-haiku, gpt-4o-mini
+- **4 Models Evaluation**: claude-3-5-haiku, gpt-4o-mini, gpt-4.1-mini, gpt-4.1-nano
 - **GPT-5 as Judge**: State-of-the-art evaluation with detailed reasoning
 - **Dual Metrics**: Correctness (≥0.7) + Style (≥0.8) evaluation
 - **Real Cost Tracking**: Actual API costs (no estimates!)
@@ -146,13 +146,13 @@ cp .env.example .env
 
 ### 2. Run Evaluation
 ```bash
-# Single test case (3 models) - cost: ~$1.50
+# Single test case (4 models) - cost: ~$2.00
 python -m pytest test_llm_evaluation.py -k "test_case0-0.3 and test_correctness" -v
 
-# Three test cases (9 tests) - cost: ~$4.50
+# Three test cases (12 tests) - cost: ~$6.00
 python -m pytest test_llm_evaluation.py -k "(test_case0-0.3 or test_case1-0.3 or test_case2-0.3) and test_correctness" -v
 
-# Full evaluation (162 tests) - cost: ~$10-20
+# Full evaluation (216 tests) - cost: ~$15-25
 python -m pytest test_llm_evaluation.py --junitxml=results.xml -v
 
 # Run specific test case locally
@@ -215,9 +215,9 @@ ANTHROPIC_API_KEY=sk-ant-api03-your-key-here
 
 | Scope | Tests | Est. Cost | Use Case |
 |-------|-------|-----------|----------|
-| Single | 1 test | ~$0.50 | Quick verification |
-| Three Cases | 3 tests | ~$2 | Development |
-| Full Suite | 162 tests | ~$10-20 | Production validation |
+| Single | 4 tests | ~$2 | Quick verification |
+| Three Cases | 12 tests | ~$6 | Development |
+| Full Suite | 216 tests | ~$15-25 | Production validation |
 
 **Cost tracking**: All runs show exact API costs in JUnit XML properties.
 
@@ -275,7 +275,7 @@ python -m pytest test_llm_evaluation.py --junitxml=results.xml
 
 This implementation follows the **input.md blueprint** using:
 - **DeepEval 3.4.9+**: Native G-Eval metrics with GPT-5 judge
-- **pytest parametrization**: 3 models × 1 temperature × 27 questions × 2 metrics = 162 tests
+- **pytest parametrization**: 4 models × 1 temperature × 27 questions × 2 metrics = 216 tests
 - **Async API calls**: Efficient concurrent evaluation
 - **JUnit XML integration**: Rich custom properties for CI/CD
 
