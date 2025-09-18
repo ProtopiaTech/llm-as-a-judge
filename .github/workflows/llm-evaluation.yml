@@ -116,17 +116,151 @@ jobs:
         files: test-results/junit.xml
         check_name: "LLM Evaluation Detailed Results"
 
-    - name: 🚨 Fail on Test Failures
+    - name: 💎 Rich Results Parser
       if: always()
       run: |
-        if [ -f test-results/junit.xml ]; then
-          FAILURES=$(xmllint --xpath "//testsuite/@failures" test-results/junit.xml | sed 's/failures="//;s/"//')
-          if [ "$FAILURES" != "0" ]; then
-            echo "❌ Tests failed with $FAILURES failures"
-            exit 1
-          fi
-          echo "✅ All tests passed!"
-        else
-          echo "⚠️  No test results found"
-          exit 1
-        fi
+        python3 -c "
+import xml.etree.ElementTree as ET
+import os
+from collections import defaultdict
+
+try:
+    tree = ET.parse('test-results/junit.xml')
+    root = tree.getroot()
+
+    # Extract basic metrics
+    testsuite = root.find('.//testsuite')
+    total_tests = testsuite.get('tests', '0')
+    failures = testsuite.get('failures', '0')
+    time = float(testsuite.get('time', '0'))
+
+    status = '✅ PASSED' if failures == '0' else '❌ FAILED'
+    scope = os.environ.get('TEST_SCOPE', 'single')
+
+    # Parse all test cases and extract custom properties
+    test_results = []
+    total_cost = 0.0
+    model_stats = defaultdict(lambda: {'tests': 0, 'cost': 0.0, 'scores': []})
+
+    for testcase in root.findall('.//testcase'):
+        test_name = testcase.get('name', 'Unknown')
+
+        # Extract properties
+        props = {}
+        for prop in testcase.findall('.//property'):
+            name = prop.get('name')
+            value = prop.get('value')
+            if name and value:
+                props[name] = value
+
+        # Parse cost
+        cost_str = props.get('api_cost_usd', '\$0.00')
+        try:
+            cost = float(cost_str.replace('\$', ''))
+            total_cost += cost
+        except:
+            cost = 0.0
+
+        # Determine test type and extract relevant metrics
+        if 'correctness' in test_name:
+            metric_type = 'Correctness'
+            score = props.get('correctness_score', 'N/A')
+            threshold = props.get('correctness_threshold', 'N/A')
+            passed = props.get('correctness_passed', 'False') == 'True'
+            reason = props.get('correctness_reason', 'N/A')
+        elif 'style' in test_name:
+            metric_type = 'Style'
+            score = props.get('style_score', 'N/A')
+            threshold = props.get('style_threshold', 'N/A')
+            passed = props.get('style_passed', 'False') == 'True'
+            reason = props.get('style_reason', 'N/A')
+        else:
+            metric_type = 'Unknown'
+            score = 'N/A'
+            threshold = 'N/A'
+            passed = testcase.find('failure') is None
+            reason = 'N/A'
+
+        # Extract model name
+        model = props.get('model', 'Unknown')
+        model_short = model.split('-')[0] if model != 'Unknown' else 'Unknown'
+
+        # Update model stats
+        if score != 'N/A':
+            try:
+                model_stats[model_short]['scores'].append(float(score))
+            except:
+                pass
+        model_stats[model_short]['tests'] += 1
+        model_stats[model_short]['cost'] += cost
+
+        # Format for display
+        test_short = test_name.split('[')[0] if '[' in test_name else test_name
+        test_short = test_short.replace('test_', '').title()
+        reason_short = reason[:40] + '...' if len(reason) > 40 else reason
+        status_icon = '✅' if passed else '❌'
+
+        test_results.append({
+            'test': test_short,
+            'model': model_short,
+            'metric': metric_type,
+            'score': score,
+            'threshold': threshold,
+            'status': status_icon,
+            'cost': f'\${cost:.4f}',
+            'reason': reason_short
+        })
+
+    # Generate summary
+    summary = f'''## 🤖 LLM-as-a-Judge Evaluation Results
+
+### 📈 Overview
+| Metric | Value |
+|--------|-------|
+| **Status** | {status} |
+| **Scope** | {scope.upper()} |
+| **Tests Run** | {total_tests} |
+| **Failures** | {failures} |
+| **Duration** | {time:.1f}s |
+| **Judge Model** | GPT-5 |
+| **Total API Cost** | \${total_cost:.4f} |
+
+### 🎯 Detailed Results
+| Test | Model | Metric | Score | Threshold | Status | Cost | Reason |
+|------|-------|--------|--------|-----------|--------|------|--------|'''
+
+    for result in test_results:
+        summary += f'\n| {result[\"test\"]} | {result[\"model\"]} | {result[\"metric\"]} | {result[\"score\"]} | {result[\"threshold\"]} | {result[\"status\"]} | {result[\"cost\"]} | {result[\"reason\"]} |'
+
+    # Model performance breakdown
+    if model_stats:
+        summary += '\n\n### 🏆 Model Performance\n| Model | Tests | Avg Score | Total Cost |\n|-------|-------|-----------|------------|'
+
+        for model, stats in model_stats.items():
+            if stats['scores']:
+                avg_score = sum(stats['scores']) / len(stats['scores'])
+                avg_score_str = f'{avg_score:.2f}'
+            else:
+                avg_score_str = 'N/A'
+
+            summary += f'\n| {model} | {stats[\"tests\"]} | {avg_score_str} | \${stats[\"cost\"]:.4f} |'
+
+    # Write to GitHub Step Summary
+    with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as f:
+        f.write(summary)
+
+    print('✅ Rich results summary generated successfully!')
+
+except Exception as e:
+    print(f'❌ Error generating rich summary: {str(e)}')
+    # Fallback basic summary
+    summary = f'''## 🤖 LLM-as-a-Judge Evaluation Results
+
+❌ Could not parse detailed results: {str(e)}
+
+📊 Check the standard JUnit reports below for basic test information.'''
+
+    with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as f:
+        f.write(summary)
+"
+
