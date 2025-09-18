@@ -207,9 +207,11 @@ jobs:
                     passed = testcase.find('failure') is None
                     reason = 'N/A'
 
-                # Extract model name (use full original name)
+                # Extract model name and test case info
                 model = props.get('model', 'Unknown')
                 model_short = model  # Use full model name
+                test_case_id = props.get('test_case_id', 'Unknown')
+                question = props.get('question', '')
 
                 # Update model stats
                 if score != 'N/A':
@@ -221,20 +223,22 @@ jobs:
                 model_stats[model_short]['cost'] += cost
 
                 # Format for display
-                test_short = test_name.split('[')[0] if '[' in test_name else test_name
-                test_short = test_short.replace('test_', '').title()
-                reason_short = reason[:40] + '...' if len(reason) > 40 else reason
+                test_display = f"{test_case_id}" if test_case_id != 'Unknown' else metric_type
+                if question and len(question) > 0:
+                    question_short = question[:50] + '...' if len(question) > 50 else question
+                    test_display = f"{test_case_id}: {question_short}"
+
                 status_icon = '✅' if passed else '❌'
 
                 test_results.append({
-                    'test': test_short,
+                    'test': test_display,
                     'model': model_short,
                     'metric': metric_type,
                     'score': score,
                     'threshold': threshold,
                     'status': status_icon,
                     'cost': f'${cost:.4f}',
-                    'reason': reason_short
+                    'reason': reason  # Full reason, no truncation
                 })
 
             # Generate summary
@@ -252,8 +256,8 @@ jobs:
         | **Total API Cost** | ${total_cost:.4f} |
 
         ### 🎯 Detailed Results
-        | Test | Model | Metric | Score | Threshold | Status | Cost | Reason |
-        |------|-------|--------|--------|-----------|--------|------|--------|"""
+        | Test Case & Question | Model | Metric | Score | Threshold | Status | Cost | Reason |
+        |---------------------|-------|--------|--------|-----------|--------|------|--------|"""
 
             for result in test_results:
                 summary += f"""
