@@ -52,9 +52,9 @@ jobs:
     - name: 🧪 Run LLM Evaluation (Single Test)
       if: github.event.inputs.test_scope != 'full' && github.event.inputs.test_scope != 'three_cases'
       run: |
-        echo "🚀 Running single test case evaluation..."
+        echo "🚀 Running single test case evaluation (both correctness & style)..."
         python -m pytest test_llm_evaluation.py \
-          -k "test_case0-0.3 and test_correctness" \
+          -k "test_case0-0.3" \
           --junitxml=test-results/junit.xml \
           --html=test-results/report.html \
           --self-contained-html \
@@ -63,9 +63,9 @@ jobs:
     - name: 🧪 Run LLM Evaluation (Three Cases)
       if: github.event.inputs.test_scope == 'three_cases'
       run: |
-        echo "🚀 Running three test cases evaluation..."
+        echo "🚀 Running three test cases evaluation (both correctness & style)..."
         python -m pytest test_llm_evaluation.py \
-          -k "(test_case0-0.3 or test_case1-0.3 or test_case2-0.3) and test_correctness" \
+          -k "(test_case0-0.3 or test_case1-0.3 or test_case2-0.3)" \
           --junitxml=test-results/junit.xml \
           --html=test-results/report.html \
           --self-contained-html \
@@ -75,7 +75,7 @@ jobs:
       if: github.event.inputs.test_scope == 'full'
       run: |
         echo "🚀 Running full evaluation suite..."
-        echo "⚠️  This will cost approximately $15-25 USD"
+        echo "⚠️  This will cost approximately $0.25 USD"
         python -m pytest test_llm_evaluation.py \
           --junitxml=test-results/junit.xml \
           --html=test-results/report.html \

@@ -146,20 +146,20 @@ cp .env.example .env
 
 ### 2. Run Evaluation
 ```bash
-# Single test case (4 models) - cost: ~$2.00
-python -m pytest test_llm_evaluation.py -k "test_case0-0.3 and test_correctness" -v
+# Single test case (4 models, both metrics) - cost: ~$0.01
+python -m pytest test_llm_evaluation.py -k "test_case0-0.3" -v
 
-# Three test cases (12 tests) - cost: ~$6.00
-python -m pytest test_llm_evaluation.py -k "(test_case0-0.3 or test_case1-0.3 or test_case2-0.3) and test_correctness" -v
+# Three test cases (24 tests) - cost: ~$0.03
+python -m pytest test_llm_evaluation.py -k "(test_case0-0.3 or test_case1-0.3 or test_case2-0.3)" -v
 
-# Full evaluation (216 tests) - cost: ~$15-25
+# Full evaluation (216 tests) - cost: ~$0.25
 python -m pytest test_llm_evaluation.py --junitxml=results.xml -v
 
-# Run specific test case locally
-python -m pytest test_llm_evaluation.py -k "test_case5-0.3 and test_correctness" -v
+# Run specific test case locally (both metrics)
+python -m pytest test_llm_evaluation.py -k "test_case5-0.3" -v
 
-# Run with JUnit XML output for CI/CD
-python -m pytest test_llm_evaluation.py -k "test_case0-0.3 and test_correctness" --junitxml=results.xml --html=report.html --self-contained-html -v
+# Run with JUnit XML output for CI/CD (both metrics)
+python -m pytest test_llm_evaluation.py -k "test_case0-0.3" --junitxml=results.xml --html=report.html --self-contained-html -v
 ```
 
 ## 📊 Sample Results
@@ -215,9 +215,9 @@ ANTHROPIC_API_KEY=sk-ant-api03-your-key-here
 
 | Scope | Tests | Est. Cost | Use Case |
 |-------|-------|-----------|----------|
-| Single | 4 tests | ~$2 | Quick verification |
-| Three Cases | 12 tests | ~$6 | Development |
-| Full Suite | 216 tests | ~$15-25 | Production validation |
+| Single | 8 tests | ~$0.01 | Quick verification |
+| Three Cases | 24 tests | ~$0.03 | Development |
+| Full Suite | 216 tests | ~$0.25 | Production validation |
 
 **Cost tracking**: All runs show exact API costs in JUnit XML properties.
 
@@ -239,10 +239,12 @@ ANTHROPIC_API_KEY=sk-ant-api03-your-key-here
 
 ```bash
 test_llm_evaluation.py::TestLLMQuality::test_correctness[test_case0-0.3-claude-3-5-haiku-20241022] PASSED
+test_llm_evaluation.py::TestLLMQuality::test_style[test_case0-0.3-claude-3-5-haiku-20241022] PASSED
 
 Properties:
 - model: claude-3-5-haiku-20241022
 - correctness_score: 1.0 (threshold: 0.7) ✅
+- style_score: 0.9 (threshold: 0.8) ✅
 - api_cost_usd: $0.0024
 - tokens_used: 1813
 - judge_model: gpt-5
