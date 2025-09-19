@@ -44,6 +44,34 @@ def pytest_runtest_makereport(item, call):
                 if reason:
                     item.user_properties.append((f"{metric_name}_reason", reason))
 
+        # Add Agent evaluation metrics if available
+        if hasattr(item, 'agent_evaluation_metrics'):
+            for metric_name, metric_data in item.agent_evaluation_metrics.items():
+                item.user_properties.append((f"agent_{metric_name}_score", str(metric_data.get('score', 'N/A'))))
+                item.user_properties.append((f"agent_{metric_name}_threshold", str(metric_data.get('threshold', 'N/A'))))
+                item.user_properties.append((f"agent_{metric_name}_passed", str(metric_data.get('passed', False))))
+                reason = metric_data.get('reason', '')
+                if reason:
+                    item.user_properties.append((f"agent_{metric_name}_reason", reason))
+
+        # Add Agent-specific properties
+        if hasattr(item, 'agent_scenario'):
+            item.user_properties.append(("agent_scenario", item.agent_scenario))
+        if hasattr(item, 'expected_tools'):
+            item.user_properties.append(("expected_tools", str(item.expected_tools)))
+        if hasattr(item, 'actual_tools'):
+            item.user_properties.append(("actual_tools", str(item.actual_tools)))
+        if hasattr(item, 'expected_tool_inputs'):
+            item.user_properties.append(("expected_tool_inputs", str(item.expected_tool_inputs)))
+        if hasattr(item, 'actual_tool_inputs'):
+            item.user_properties.append(("actual_tool_inputs", str(item.actual_tool_inputs)))
+        if hasattr(item, 'safety_critical'):
+            item.user_properties.append(("safety_critical", str(item.safety_critical)))
+        if hasattr(item, 'final_response'):
+            # Truncate response for XML
+            response_short = item.final_response[:300] + "..." if len(item.final_response) > 300 else item.final_response
+            item.user_properties.append(("agent_final_response", response_short))
+
 
 def pytest_configure(config):
     """Configure pytest with custom markers"""
